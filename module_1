@@ -1,0 +1,96 @@
+#Packages
+
+library(lubridate)
+library(magrittr) 
+library(dplyr)    
+library(tidyverse)
+library(readxl)
+
+#Importing the Excel file each sheet as seperate dataset, "skip" to delete the firts note line
+transaction <- read_xlsx("KPMG_VI_New_raw_data_update_final.xlsx", sheet = "Transactions"       , skip = 1)
+adress      <- read_xlsx("KPMG_VI_New_raw_data_update_final.xlsx", sheet = "CustomerAddress"    , skip = 1)
+demographic <- read_xlsx("KPMG_VI_New_raw_data_update_final.xlsx", sheet = "CustomerDemographic", skip = 1)
+newcustomer <- read_xlsx("KPMG_VI_New_raw_data_update_final.xlsx", sheet = "NewCustomerList"    , skip = 1)
+
+####transaction  
+head(transaction)
+
+#change the variable: product_first_sold_date from excel date format
+transaction$product_first_sold_date <- openxlsx::convertToDate(transaction$product_first_sold_date)
+
+
+#check the obserbations 
+unique(transaction$online_order)
+unique(transaction$product_class)
+unique(transaction$brand)
+unique(transaction$order_status)
+
+#deleting NAs 
+transaction <- transaction %>% drop_na(online_order)
+transaction <- transaction %>% drop_na(brand)
+
+#drop canneled transactions
+transaction <- transaction[- grep("Cancelled", transaction$order_status),]
+
+#tranfter variables 
+transaction$product_class <- as.factor(transaction$product_class)
+transaction$product_size <- as.factor(transaction$product_size)
+
+#adding profit variable
+transaction$profit <- transaction$list_price - transaction$standard_cost
+
+####demographic  
+head(demographic)
+
+#check the observation
+unique(demographic$gender)
+unique(demographic$wealth_segment)
+unique(demographic$owns_car)
+unique(demographic$DOB)
+summary(demographic$DOB)
+
+#clean the observaions
+demographic$gender <- sub("Female", "F"  , demographic$gender)
+demographic$gender <- sub("Femal" , "F"  , demographic$gender)
+demographic$gender <- sub("Male"  , "M"  , demographic$gender)
+
+#change the variable: product_first_sold_date from excel date 
+demographic$DOB <- convertToDate(demographic$DOB)
+
+#tranfter variables into 
+demographic$gender <- as.factor(demographic$gender)
+demographic$wealth_segment <- as.factor(demographic$wealth_segment)
+demographic$DOB <- as.Date(demographic$DOB)
+
+#get_age function 
+demographic$age <- get_age(demographic$DOB)
+summary(demographic$age)
+
+#drop NAs
+demographic <- demographic %>% drop_na(age)
+
+#remove column "default" 
+demographic <- demographic[,-11]
+
+####Adress
+head(adress)
+
+#Check the variables and existence of empy blanks
+unique(adress$state)
+unique(adress$address)
+unique(adress$state)
+
+
+#clean the observaions
+adress$state <- sub("Victoria", "VIC", adress$state) 
+adress$state <- sub("New South Wales", "NSW", adress$state) 
+
+
+
+####END OF MODULE 1
+
+
+
+
+
+
